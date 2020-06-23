@@ -1,0 +1,22 @@
+Identification of Seasonality
+
+There are several ways to identify seasonal cycles in time series data.
+
+First, if the seasonal pattern is very clear, you may be able to detect it in a plot of the time series (time = t on the X axis; X at time t on the Y axis).
+
+Second, you can obtained a lagged autocorrelation function. For example, if each data point represents a measure for one month, and there is a 12 month cycle, a graph of the lagged autocorrelation function should show a relatively large positive autocorrelation at lag 12, with smaller peaks at lags 24 and 36 (if larger number of time lags are examined).
+
+Third, you can set up a table in which you have the mean of all the X measurements obtained in January, February, March,… Dec. (This is a particularly useful way to present results if your audience is not well versed in time series analysis).
+
+Fourth, you can obtain a periodogram (unsmoothed Fast Fourier Transform) or a power spectrum (smoothed FFT). (Data should be detrended prior to analysis.) A graph of a periodogram or spectrum is given in terms of frequency instead of period. A frequency of 1/12 cycle per year corresponds to a period of 12 months per cycle. However, if there are other frequencies (cycles) in your data, this may not yield a clear pattern.
+
+Fifth, you can fit a harmonic function using sin(t) and cos(t) as predictors.
+
+In most of these situations it is easy to obtain statistical significance tests.
+
+If you want to remove seasonal cycles from time series data prior to doing other analyses, you difference scores at the time lag that corresponds to cycle length, i.e., Xt - X(t-12).
+
+Regarding the existing algorithms documented in the literature, most of them can be categorized into two families:
+
+    Fast Fourier Transform (FFT): The idea is extracting the local maximums of the spectrum to find the season period. But there some hardly avoidable pitfalls: highly sensitive to noise, when there are harmonics like time series with seasonal peaks
+    Autocorrelation function (ACF): The goal is also to extract some local maximums but there are not the problems we have in FFT. In the other side, ACF is very slow.
