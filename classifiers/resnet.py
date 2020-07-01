@@ -1,20 +1,14 @@
-# resnet model 
-# when tuning start with learning rate->mini_batch_size -> 
-# momentum-> #hidden_units -> # learning_rate_decay -> #layers 
 import tensorflow.keras as keras
 import tensorflow as tf
 import numpy as np
 import time
 
 import matplotlib
-#from utils.utils import save_test_duration
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 from classifiers.base import base_Model
-#from utils.utils import save_logs
-#from utils.utils import calculate_metrics
 
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
@@ -122,65 +116,4 @@ class Classifier_RESNET(base_Model):
         optimizer = keras.optimizers.Adam(lr=0.01)
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-        '''
-        reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=50, min_lr=0.0001)
-        earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=10)
-        
-        self.callbacks = [earlystop, model_checkpoint]
-        '''
-        
         return model
-
-    '''
-    def fit(self, x_train, y_train, x_val, y_val):
-        if not tf.test.is_gpu_available:
-            print('error')
-            exit()
-        # x_val and y_val are only used to monitor the test loss and NOT for training
-        batch_size = 64
-        nb_epochs = 100
-
-        #mini_batch_size = int(min(x_train.shape[0] / 10, batch_size))
-
-        start_time = time.time()
-
-        hist = self.model.fit(x_train, y_train, batch_size=batch_size, epochs=nb_epochs, verbose=self.verbose, validation_data=(x_val, y_val), callbacks=self.callbacks)
-
-        duration = time.time() - start_time
-
-        self.model.save(self.output_directory + 'last_model.hdf5')
-
-        y_pred = self.predict(x_val, x_train, y_train, y_val, return_df_metrics=False)
-
-        # save predictions
-        np.save(self.output_directory + 'y_pred.npy', y_pred)
-
-        
-        # convert the predicted from binary to integer
-        #y_pred = np.argmax(y_pred, axis=1)
-
-        #df_metrics = save_logs(self.output_directory, hist, y_pred, y_true, duration)
-
-        #keras.backend.clear_session()
-
-        #return df_metrics
-        
-        
-
-    def predict(self, x_test, model_path=None):
-        start_time = time.time()
-        model_path = self.output_directory + 'best_model.hdf5'
-        model = keras.models.load_model(model_path)
-        y_pred = model.predict(x_test)
-
-        return y_pred
-
-        if return_df_metrics:
-            y_pred = np.argmax(y_pred, axis=1)
-            df_metrics = calculate_metrics(y_true, y_pred, 0.0)
-            return df_metrics
-        else:
-            test_duration = time.time() - start_time
-            save_test_duration(self.output_directory + 'test_duration.csv', test_duration)
-            return y_pred
-    '''
