@@ -3,6 +3,8 @@ import tensorflow as tf
 import numpy as np
 import time 
 
+from classifiers.base import base_Model
+
 tf.random.set_seed(42)
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
@@ -10,8 +12,6 @@ from tensorflow.compat.v1 import InteractiveSession
 config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
-
-from classifiers.base import base_Model
 
 class Classifier_FCN(base_Model):
 	def __init__(self, output_directory, input_shape, nb_classes, verbose=False, build=True):
@@ -25,8 +25,7 @@ class Classifier_FCN(base_Model):
 			if(verbose==True):
 				self.model.summary()
 
-			self.verbose = verbose
-			#self.model.save_weights(self.output_directory+'model_init.hdf5')
+		self.verbose = verbose
 		
 		file_path = self.output_directory+'best_model.hdf5'
 		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
