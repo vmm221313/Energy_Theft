@@ -72,7 +72,7 @@ def main(args):
 	verbose 	= True
 
 	classifier = init_classifier(args.model, outputs_dir, input_shape, nb_classes, verbose)
-	#classifier.fit(X_train, y_train, X_val, y_val)
+	classifier.fit(X_train, y_train, X_val, y_val)
 
 	y_pred = classifier.predict(X_test)
 
