@@ -3,11 +3,6 @@ import tensorflow as tf
 import numpy as np
 import time
 
-import matplotlib
-
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-
 from classifiers.base import base_Model
 
 from tensorflow.compat.v1 import ConfigProto
@@ -34,8 +29,8 @@ class Classifier_RESNET(base_Model):
         if load_weights == True:
             self.model.load_weights(self.output_directory.replace('resnet_augment', 'resnet').replace('TSC_itr_augment_x_10', 'TSC_itr_10')+ '/model_init.hdf5')
         
-        else:
-            self.model.save_weights(self.output_directory + 'model_init.hdf5')
+        #else:
+        #    self.model.save_weights(self.output_directory + 'model_init.hdf5')
 
         file_path = self.output_directory + 'best_model.hdf5'
         model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
