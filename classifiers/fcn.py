@@ -6,6 +6,7 @@ import tensorflow as tf
 import numpy as np
 import time 
 
+tf.random.set_seed(42)
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
@@ -13,20 +14,28 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
+from classifiers.base import base_Model
 #from utils.utils import save_logs
 #from utils.utils import calculate_metrics
 
-class Classifier_FCN:
-
+class Classifier_FCN(base_Model):
 	def __init__(self, output_directory, input_shape, nb_classes, verbose=False, build=True):
+		super(Classifier_FCN, self).__init__()
+
 		self.output_directory = output_directory
+		
 		if build == True:
 			self.model = self.build_model(input_shape, nb_classes)
+
 			if(verbose==True):
 				self.model.summary()
+
 			self.verbose = verbose
-			self.model.save_weights(self.output_directory+'model_init.hdf5')
-		return
+			#self.model.save_weights(self.output_directory+'model_init.hdf5')
+		
+		file_path = self.output_directory+'best_model.hdf5'
+		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
+		self.callbacks.append(model_checkpoint)
 
 	def build_model(self, input_shape, nb_classes):
 		input_layer = keras.layers.Input(input_shape)
@@ -53,16 +62,18 @@ class Classifier_FCN:
 
 		model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=['accuracy'])
 
+		'''
 		file_path = self.output_directory+'best_model.hdf5'
-
 		reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=0.0001)
 		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_loss', save_best_only=True)
 		earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=10)
 
 		self.callbacks = [model_checkpoint, earlystop]
+		'''
 
 		return model 
 
+	'''
 	def fit(self, x_train, y_train, x_val, y_val):
 		if not tf.test.is_gpu_available:
 			print('error')
@@ -92,17 +103,21 @@ class Classifier_FCN:
 
 		keras.backend.clear_session()
 
-	def predict(self, x_test, x_train, y_train, y_test, return_df_metrics = True):
-		model_path = self.output_directory + 'best_model.hdf5'
+	def predict(self, x_test, model_path=None):
+		
+		if model_path == None:
+			model_path = self.output_directory+'best_model.hdf5'
+
 		model = keras.models.load_model(model_path)
-		
 		y_pred = model.predict(x_test)
+
+		return y_pred
 		
-		'''
+		
 		if return_df_metrics:
 			y_pred = np.argmax(y_pred, axis=1)
 			df_metrics = calculate_metrics(y_true, y_pred, 0.0)
 			return df_metrics
 		else:
 			return y_pred
-		'''
+	'''

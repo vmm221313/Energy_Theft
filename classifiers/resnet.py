@@ -12,6 +12,7 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
+from classifiers.base import base_Model
 #from utils.utils import save_logs
 #from utils.utils import calculate_metrics
 
@@ -22,23 +23,29 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
-class Classifier_RESNET:
-
+class Classifier_RESNET(base_Model):
     def __init__(self, output_directory, input_shape, nb_classes, verbose=False, build=True, load_weights=False):
+        super(Classifier_RESNET, self).__init__()
+
         self.output_directory = output_directory
+        
         if build == True:
             self.model = self.build_model(input_shape, nb_classes)
+            
             if (verbose == True):
                 self.model.summary()
-            self.verbose = verbose
-            if load_weights == True:
-                self.model.load_weights(self.output_directory
-                                        .replace('resnet_augment', 'resnet')
-                                        .replace('TSC_itr_augment_x_10', 'TSC_itr_10')
-                                        + '/model_init.hdf5')
-            else:
-                self.model.save_weights(self.output_directory + 'model_init.hdf5')
-        return
+            
+        self.verbose = verbose
+        
+        if load_weights == True:
+            self.model.load_weights(self.output_directory.replace('resnet_augment', 'resnet').replace('TSC_itr_augment_x_10', 'TSC_itr_10')+ '/model_init.hdf5')
+        
+        else:
+            self.model.save_weights(self.output_directory + 'model_init.hdf5')
+
+        file_path = self.output_directory + 'best_model.hdf5'
+        model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
+        self.callbacks.append(model_checkpoint)
 
     def build_model(self, input_shape, nb_classes):
         n_feature_maps = 64
@@ -115,16 +122,16 @@ class Classifier_RESNET:
         optimizer = keras.optimizers.Adam(lr=0.01)
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-        file_path = self.output_directory + 'best_model.hdf5'
-
-        #reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=50, min_lr=0.0001)
-        model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
+        '''
+        reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=50, min_lr=0.0001)
         earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=10)
-
+        
         self.callbacks = [earlystop, model_checkpoint]
-
+        '''
+        
         return model
 
+    '''
     def fit(self, x_train, y_train, x_val, y_val):
         if not tf.test.is_gpu_available:
             print('error')
@@ -148,25 +155,26 @@ class Classifier_RESNET:
         # save predictions
         np.save(self.output_directory + 'y_pred.npy', y_pred)
 
-        '''
+        
         # convert the predicted from binary to integer
-        y_pred = np.argmax(y_pred, axis=1)
+        #y_pred = np.argmax(y_pred, axis=1)
 
         #df_metrics = save_logs(self.output_directory, hist, y_pred, y_true, duration)
 
-        keras.backend.clear_session()
+        #keras.backend.clear_session()
 
-        return df_metrics
-        '''
+        #return df_metrics
+        
         
 
-    def predict(self, x_test, x_train, y_train, y_test, return_df_metrics=False):
+    def predict(self, x_test, model_path=None):
         start_time = time.time()
         model_path = self.output_directory + 'best_model.hdf5'
         model = keras.models.load_model(model_path)
         y_pred = model.predict(x_test)
 
-        '''
+        return y_pred
+
         if return_df_metrics:
             y_pred = np.argmax(y_pred, axis=1)
             df_metrics = calculate_metrics(y_true, y_pred, 0.0)
@@ -175,4 +183,4 @@ class Classifier_RESNET:
             test_duration = time.time() - start_time
             save_test_duration(self.output_directory + 'test_duration.csv', test_duration)
             return y_pred
-        '''
+    '''
