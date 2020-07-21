@@ -1,0 +1,79 @@
+OHIT - Oversampling method to combat the High-dimensional Imbalanced Time-series classification
+
+Goals of approach
+1. Develop an oversampling method for imbalances TS classification that can accurately acquire the correlation structure of the minority class, and generate synthetic samples to preserve the correlation implied in the minority class. Hence we want to improve the performance on the minority class without damaging the performance on the majority class.
+
+Overview
+1. clustering high-dimensional data
+2. estimating the large-dimensional covariance matrix based on limited data
+3. and yielding structure-preserving synthetic samples
+
+Method
+1. Clustering of High-dimensional data
+
+Shared Nearest Neighbour (SSN) similarity - the similarity between a pair of samples is measured by the number of common neighbours in their nearest neighbour lists. Since SNN similarity only depends on the local configuration of the samples in the data space, the samples
+within dense clusters and sparse clusters will show roughly equal SNN similarities, which can mitigate the difficulty of clustering caused by the density variations of clusters. SSN similarity is called the secondary similarity measure, while the method used to find the k nearest neighbours of each sample is the primary similarity measure.
+	
+SNN Algorithm
+	a) Defining the density of a sample based on the SNN simiarity
+		In traditional density clustering, the density of a sample is defined as the number of the samples whose distances from this sample are not larger than the distance threshold (Esp)
+
+		The problem with this approach is that outliers and regular samples could have similar densities
+
+		So we make the following modifications - Only samples which appear in the k nearest neighbour groups of each other can contribute to the density of the target sample. Using this method outliers will have nearly 0 density (see images in the paper)
+
+	b) Core points and directly density-reachable sample set (finding core points according to the density of the samples)
+		In SNN clustering, the core points are defined as the samples whose densities are higher than the density threshold (MinPts). The directly density-reachable sample set of core point is defined as the set of shared nearest neighbours with which the similarity of the core point exceeds the distance threshold (Esp) (similarity exceeding some value is synonymous to distance being less than the same value)
+
+	c) The creation of clusters
+		The core points that are directly density-reachable to each other are put into the same cluster. All points which are not directly density reachable with any core points are categorized as outliers. All other points (neither core points nor outliers) are assigned to the cluster in which their nearest core points are. 
+
+	Problem with SNN - 
+		1. Difficult to choose Esp, MinPts and k. Improper choices of params leads to poor clustering
+
+DRSNN Algorithm
+	Density Ration + SNN similarity 
+
+	a) Sample Density 
+		Defined as the similarity between the sample and each of its shared nearest neighbours (so the Esp parameter is no longer needed).
+
+	b) Sample Density Ratio (dr)
+		Defined as the ratio of the density of the sample to the average density of the k nearest neighbours of the sample
+
+	c) Core Points
+		Samples whose density is greater than a threshold value drT (set to 1)
+
+	d) Directly density-reachable sample set of a core point
+		Contains - 
+			i) The k nearest neighbours
+			ii) The Core Points in the reverse k nearest neighbours
+
+Summary of DRSNN algorithm 
+	1) Find k-nearest neighbors of minority samples according to certain primary similarity or distance measure.
+	
+	2) Calculate SNN similarity. For all pairs of minority samples, compute their SNN similarities as Eqn. 1.
+	
+	3) Calculate the density of each sample as Eqn. 4.
+	
+	4) Calculate the density ratio of each sample as Eqn. 5.
+	
+	5) Identify the core points, i.e., all the samples that have adensity ratio greater than drT .
+	
+	6) Find the directly density-reachable sample set for each core point as Eqn. 6.
+	
+	7) Build the clusters. The core points, that are directly density-reachable each other, are placed in the same clusters; the samples which are not directly density-reachable with any core points are treated as outliers; finally, all the other points are assigned to the clusters where their directly density-reachable core points are.
+
+Shrinkage Estimation of Large-dimensional Covariance Matrix
+
+Generation of Structure-preserving Synthetic Samples
+	1)For a cluster i discovered by DRSNN, first compute the mean of the cluster (mu_i) and the shrinkage covariance matrix (S*_i)
+
+	2) Then the synthetic samples are yielded based on the Gaussian distribution N(mu_i, S*_i). Hence the synthetic samples maintain the covariance structure of each mode.
+
+Notes
+1. Correlation structure (aka dependence shape) - how the correlation between the variables varies based on the value of one of the variables
+	Put differently, say x and y are tradeable assets, if the correlation between x and y is the same when they both have bad days as the correlation between them when they both have good days then we can broadly say, the shape of the correlation is constant.
+
+2. Correlation is the covariance of two variables divided by their individual standard deviations. Covariance and correlation are equal when the variables have been standardized (because standard deviation is 1)
+
+3. Given a multi-dimensional dataset P and a point q, a reverse nearest neighbor (RNN) query retrieves all the points p∈P that have q as their nearest neighbor.
