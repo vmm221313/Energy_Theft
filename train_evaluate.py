@@ -1,68 +1,19 @@
 import os
 import argparse
 import numpy as np
-from utils import save_results
-
-def init_classifier(classifier_name, outputs_dir, input_shape, nb_classes=2, verbose=False):
-    if classifier_name == 'fcn':
-        from classifiers import fcn
-        return fcn.Classifier_FCN(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'alstmfcn':
-        from classifiers import alstmfcn
-        return alstmfcn.Classifier_ALSTMFCN(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'lstmfcn':
-        from classifiers import lstmfcn
-        return lstmfcn.Classifier_LSTMFCN(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'mlp':
-        from classifiers import mlp
-        return mlp.Classifier_MLP(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'resnet':
-        from classifiers import resnet
-        return resnet.Classifier_RESNET(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'mcnn':
-        from classifiers import mcnn
-        return mcnn.Classifier_MCNN(outputs_dir, verbose)
-
-    if classifier_name == 'tlenet':
-        from classifiers import tlenet
-        return tlenet.Classifier_TLENET(outputs_dir, verbose)
-
-    if classifier_name == 'twiesn':
-        from classifiers import twiesn
-        return twiesn.Classifier_TWIESN(outputs_dir, verbose)
-
-    if classifier_name == 'encoder':
-        from classifiers import encoder
-        return encoder.Classifier_ENCODER(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'mcdcnn':
-        from classifiers import mcdcnn
-        return mcdcnn.Classifier_MCDCNN(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'cnn':  # Time-CNN
-        from classifiers import cnn
-        return cnn.Classifier_CNN(outputs_dir, input_shape, nb_classes, verbose)
-
-    if classifier_name == 'inception':
-        from classifiers import inception
-        return inception.Classifier_INCEPTION(outputs_dir, input_shape, nb_classes, verbose)
+from utils import save_results, init_classifier
 
 def main(args):
 	with open('data/train_splits_undersampled.npz', 'rb') as load_file:
-	    npzfile = np.load(load_file)    
-	    
-	    X_train = npzfile['X_train']
-	    X_val = npzfile['X_val']
-	    X_test = npzfile['X_test']
-	    
-	    y_train = npzfile['y_train']
-	    y_val = npzfile['y_val']
-	    y_test = npzfile['y_test']
+		npzfile = np.load(load_file)    
+		
+		X_train = npzfile['X_train']
+		X_val = npzfile['X_val']
+		X_test = npzfile['X_test']
+		
+		y_train = npzfile['y_train']
+		y_val = npzfile['y_val']
+		y_test = npzfile['y_test']
 
 	outputs_dir = 'results/{}/'.format(args.model)
 	os.makedirs('results/', exist_ok=True)
