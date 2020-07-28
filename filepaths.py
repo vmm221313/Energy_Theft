@@ -5,7 +5,6 @@ class FilePaths:
         
         # Impute
         self.imputation_raw = 'data/processed/imputation/imp_raw.csv' # Processed data ready for imputation
-        self.edtwbi_imputed = 'data/processed/imputation/edtwbi.csv' # eDTWBI imputation done
-        
+        self.edtwbi_imputed = 'data/processed/imputation/edtwbi.pkl' # eDTWBI imputation done
 
 fp = FilePaths()
