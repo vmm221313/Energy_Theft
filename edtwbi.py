@@ -111,7 +111,7 @@ def find_gaps(x):
 	
 	return missing_seqs
 
-def dtwbi(D, Q, len_gap, stride=1):
+def dtwbi(D, Q, len_gap, stride=5):
 	
 	min_dtw_cost = inf
 	start_index = 0
@@ -122,9 +122,9 @@ def dtwbi(D, Q, len_gap, stride=1):
 			cost, cost_matrix, acc_cost_matrix, path = dtw(D[i:i+len_gap], Q, dist=derivative_dtw_distance)
 		except:
 			print(D[i*len_gap:(i+1)*len_gap])
-			print(Q)
-			print(len_gap)
-			print(len(D))
+			print('Q', Q)
+			print('len_gap', len_gap)
+			print('len(D)', len(D))
 			print(i*len_gap, (i+1)*len_gap)
 			raise
 		if cost < min_dtw_cost:
@@ -142,10 +142,11 @@ def apply_dtwbi_after(x, start_index, end_index):
 	Qas_start = dtwbi(Da, Qa, len_gap)
 	#Qas = x[Qas_start:Qas_start+len_gap]
 	
-	refA = x[Qas_start-len_gap:Qas_start] # Previous window of Qas
 	if Qas_start-len_gap < 0:
 		refA = x[Qas_start:Qas_start+len_gap] # = Qa
-	
+	else:
+		refA = x[Qas_start-len_gap:Qas_start] # Previous window of Qas
+
 	return refA
 
 def apply_dtwbi_before(x, start_index, end_index):
@@ -154,24 +155,32 @@ def apply_dtwbi_before(x, start_index, end_index):
 	Qb = x[start_index-len_gap:start_index]
 	Db = x[:start_index-len_gap]
 	
+	if len(Qb) == 0:
+		print('start_index', start_index)
+		print('len_gap', len_gap)
+		print('end_index', end_index)
+		raise
+
 	Qbs_start = dtwbi(Db, Qb, len_gap)
 	#Qbs = x[Qbs_start:Qbs_start+len_gap]
 	
-	refB = x[Qbs_start+len_gap:Qbs_start+2*len_gap] # Next window of Qbs
 	if Qbs_start+2*len_gap > len(x):
 		refB = x[Qbs_start:Qbs_start+len_gap] # = Qb
 	
+	else:
+		refB = x[Qbs_start+len_gap:Qbs_start+2*len_gap] # Next window of Qbs
+
 	return refB
 
 def edtwbi(x, start_index, end_index):
 	len_gap = end_index - start_index
 	
-	if end_index + len_gap > len(x):
+	if end_index + len_gap >= len(x):
 		refB = apply_dtwbi_before(x, start_index, end_index) # only dtwbi in other direction
 		
 		return refB
 		
-	elif start_index-len_gap < 0:
+	elif start_index-len_gap <= 0:
 		refA = apply_dtwbi_after(x, start_index, end_index) # only dtwbi in other direction
 		
 		return refA
@@ -189,7 +198,8 @@ def impute_row(i):
 	
 	gaps = find_gaps(row)
 	for gap in gaps:
-		row_filled[gap[0]:gap[1]] = edtwbi(row, gap[0], gap[1])
+		if gap[1] - gap[0] < 0.3*len(row):
+			row_filled[gap[0]:gap[1]] = edtwbi(row, gap[0], gap[1])
 
 	return row_filled
 
@@ -216,7 +226,7 @@ def main(args):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('-run_mode', type=str, default='map')
+	parser.add_argument('-run_mode', type=str, default='parallel')
 	args = parser.parse_args()
 
 	main(args)
