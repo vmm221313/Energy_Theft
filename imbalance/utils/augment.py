@@ -2,11 +2,16 @@
 # "Generating synthetic time series to augment sparse datasets"
 import numpy as np
 import random
+from tqdm import tqdm
+import pickle
 
 from utils.distances.dtw import dynamic_time_warping as dtw
-from utils.dba import calculate_dist_matrix
+#from utils.dba import calculate_dist_matrix
+from utils.dba import DistanceMatrix
 from utils.dba import dba 
-from utils.knn import get_neighbors
+from utils.knn import GetNeighbors
+
+GN = GetNeighbors()
 
 # weights calculation method : Average Selected (AS)
 def get_weights_average_selected(x_train, dist_pair_mat, distance_algorithm='dtw'):
@@ -48,7 +53,7 @@ def get_weights_average_selected(x_train, dist_pair_mat, distance_algorithm='dtw
     # fill the weight of the center 
     weights[idx_center] = weight_center
     # find the top k nearest neighbors
-    topk_idx = np.array(get_neighbors(x_train,init_dba,k,dist_fun,dist_fun_params,
+    topk_idx = np.array(GN.get_neighbors(x_train,init_dba,k,dist_fun,dist_fun_params,
                          pre_computed_matrix=dist_pair_mat, 
                          index_test_instance= idx_center))
     # select a subset of the k nearest neighbors 
@@ -59,9 +64,7 @@ def get_weights_average_selected(x_train, dist_pair_mat, distance_algorithm='dtw
     # init for DBA )
     return weights, init_dba
 
-def augment_train_set(x_train, y_train, classes, N, dba_iters=5, 
-                      weights_method_name = 'aa', distance_algorithm='dtw',
-                      limit_N = True):
+def augment_train_set(x_train, y_train, classes, N, dba_iters=5, limit_N = True):
     """
     This method takes a dataset and augments it using the method in icdm2017. 
     :param x_train: The original train set
@@ -72,16 +75,20 @@ def augment_train_set(x_train, y_train, classes, N, dba_iters=5,
     :param distance_algorithm: The name of the distance algorithm used (see constants.py)
     """
     # get the weights function
-    weights_fun = WEIGHTS_METHODS[weights_method_name]
+    weights_fun = get_weights_average_selected
     # get the distance function 
-    dist_fun = DISTANCE_ALGORITHMS[distance_algorithm]
+    dist_fun = dtw
     # get the distance function params 
-    dist_fun_params = DISTANCE_ALGORITHMS_PARAMS[distance_algorithm]
+    dist_fun_params = {'w':-1} # warping window should be given in percentage (negative means no warping window)
+
     # synthetic train set and labels 
     synthetic_x_train = []
     synthetic_y_train = []
+    
     # loop through each class
     for c in classes: 
+        print('Generating samples for class {}'.format(c))
+
         # get the MTS for this class 
         c_x_train = x_train[np.where(y_train==c)]
 
@@ -97,13 +104,17 @@ def augment_train_set(x_train, y_train, classes, N, dba_iters=5,
             nb_prototypes_per_class = N + (N-len(c_x_train))
 
         # get the pairwise matrix 
-        if weights_method_name == 'aa': 
-            # then no need for dist_matrix 
-            dist_pair_mat = None 
-        else: 
-            dist_pair_mat = calculate_dist_matrix(c_x_train,dist_fun,dist_fun_params)
+        print('Calculating Distance Matrix')
+        d_mat_obj       = DistanceMatrix()
+        dist_pair_mat   = d_mat_obj.calculate_dist_matrix(c_x_train,dist_fun,dist_fun_params)
+
+        with open('data/processed/dist_pair_mat.pkl', 'wb') as f:
+            pickle.dump(dist_pair_mat, f)
+
+        print('Starting DBA Loop')
+
         # loop through the number of synthtectic examples needed
-        for n in range(nb_prototypes_per_class): 
+        for n in tqdm(range(nb_prototypes_per_class)): 
             # get the weights and the init for avg method 
             weights, init_avg = weights_fun(c_x_train,dist_pair_mat,
                                             distance_algorithm=distance_algorithm)
@@ -117,44 +128,9 @@ def augment_train_set(x_train, y_train, classes, N, dba_iters=5,
             synthetic_x_train.append(synthetic_mts)
             # add the corresponding label 
             synthetic_y_train.append(c)
+    
     # return the synthetic set 
     return np.array(synthetic_x_train), np.array(synthetic_y_train)       
-
-UNIVARIATE_DATASET_NAMES = ['50words','Adiac','ArrowHead','Beef','BeetleFly',
-                            'BirdChicken','Car','CBF','ChlorineConcentration',
-                            'CinC_ECG_torso','Coffee','Computers','Cricket_X',
-                            'Cricket_Y','Cricket_Z','DiatomSizeReduction',
-                            'DistalPhalanxOutlineAgeGroup',
-                            'DistalPhalanxOutlineCorrect','DistalPhalanxTW',
-                            'Earthquakes','ECG200','ECG5000','ECGFiveDays',
-                            'ElectricDevices','FaceAll','FaceFour','FacesUCR',
-                            'FISH','FordA','FordB','Gun_Point','Ham',
-                            'HandOutlines','Haptics','Herring','InlineSkate',
-                            'InsectWingbeatSound','ItalyPowerDemand',
-                            'LargeKitchenAppliances','Lighting2','Lighting7',
-                            'MALLAT','Meat','MedicalImages',
-                            'MiddlePhalanxOutlineAgeGroup',
-                            'MiddlePhalanxOutlineCorrect','MiddlePhalanxTW',
-                            'MoteStrain','NonInvasiveFatalECG_Thorax1',
-                            'NonInvasiveFatalECG_Thorax2','OliveOil','OSULeaf',
-                            'PhalangesOutlinesCorrect','Phoneme','Plane',
-                            'ProximalPhalanxOutlineAgeGroup',
-                            'ProximalPhalanxOutlineCorrect',
-                            'ProximalPhalanxTW','RefrigerationDevices',
-                            'ScreenType','ShapeletSim','ShapesAll',
-                            'SmallKitchenAppliances','SonyAIBORobotSurface',
-                            'SonyAIBORobotSurfaceII','StarLightCurves',
-                            'Strawberry','SwedishLeaf','Symbols',
-                            'synthetic_control','ToeSegmentation1',
-                            'ToeSegmentation2','Trace','TwoLeadECG',
-                            'Two_Patterns','UWaveGestureLibraryAll',
-                            'uWaveGestureLibrary_X','uWaveGestureLibrary_Y',
-                            'uWaveGestureLibrary_Z','wafer','Wine',
-                            'WordsSynonyms','Worms','WormsTwoClass','yoga']
-
-# UNIVARIATE_DATASET_NAMES = ['BirdChicken','DiatomSizeReduction']
-
-UNIVARIATE_ARCHIVE_NAMES = ['UCR_TS_Archive_2015']
 
 AVERAGING_ALGORITHMS = {'dba':dba}
 

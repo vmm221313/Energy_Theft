@@ -1,22 +1,52 @@
 import numpy as np 
 import utils 
+from tqdm import tqdm
+import multiprocessing as mp
 
-def calculate_dist_matrix(tseries, dist_fun, dist_fun_params):
-    N = len(tseries)
-    pairwise_dist_matrix = np.zeros((N,N), dtype = np.float64)
-    # pre-compute the pairwise distance
-    for i in range(N-1):
-        x = tseries[i]
-        for j in range(i+1,N):
-            y = tseries[j] 
-            dist = dist_fun(x,y,**dist_fun_params)[0] 
-            # because dtw returns the sqrt
-            dist = dist*dist 
-            pairwise_dist_matrix[i,j] = dist 
-            # dtw is symmetric 
-            pairwise_dist_matrix[j,i] = dist 
-        pairwise_dist_matrix[i,i] = 0 
-    return pairwise_dist_matrix
+class DistanceMatrix:
+    def __init__(self):
+        pass
+
+    def pairwise_dist_funk(self, xy):
+        x = self.tseries[xy[0]]
+        y = self.tseries[xy[1]] 
+
+        if xy[0] == -1:
+            return 0
+
+        dist = self.dist_fun(x,y,**self.dist_fun_params)[0] 
+        # because dtw returns the sqrt
+        dist = dist*dist 
+        
+        return dist
+
+    def calculate_dist_matrix(self, tseries, dist_fun, dist_fun_params):
+        self.tseries            = tseries
+        self.dist_fun           = dist_fun
+        self.dist_fun_params    = dist_fun_params
+
+        N = len(tseries)
+
+        #p = mp.Pool()
+
+        print('Computing pairwise dist in calculate_dist_matrix')
+        # pre-compute the pairwise distance
+
+        iter_ = [(i, j) for j in range(N) for i in range(N)]  
+
+        for i in range(N):
+            for j in range(N):
+                if i > j:
+                    iter_.append((i, j))
+                
+                else:
+                    iter_.append((-1, -1))
+
+        dists = list(tqdm(map(self.pairwise_dist_funk, iter_), total=len(iter_)))
+
+        pairwise_dist_matrix = np.array(dists, dtype = np.float64).reshape(N, N)
+
+        return pairwise_dist_matrix
 
 def medoid(tseries, dist_fun, dist_fun_params):
     """
@@ -26,7 +56,8 @@ def medoid(tseries, dist_fun, dist_fun_params):
     N = len(tseries)
     if N == 1 : 
         return 0,tseries[0]
-    pairwise_dist_matrix = calculate_dist_matrix(tseries, dist_fun, 
+    p_dist_obj = DistanceMatrix()
+    pairwise_dist_matrix = p_dist_obj.calculate_dist_matrix(tseries, dist_fun, 
                                                  dist_fun_params)
         
     sum_dist = np.sum(pairwise_dist_matrix, axis = 0)
