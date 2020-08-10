@@ -2,7 +2,7 @@ import numpy as np
 import pandas as po
 import matplotlib.pyplot as plt
 
-from utils.augment import augment_train_set
+from utils.augment import DataAugmentation#augment_train_set
 
 def main():
     df = po.read_csv('../data/processed/imputation/edtwbi.csv').sample(frac=1, random_state=42).reset_index(drop=True)
@@ -27,12 +27,13 @@ def main():
     y_val       = y_val.to_numpy()
     y_test      = y_test.to_numpy()
 
-    N       = 100 
+    N           = 10000
 
     classes, classes_counts = np.unique(y_train, return_counts=True)    
 
     # augment the dataset
-    X_train_synth, y_train_synth = augment_train_set(X_train, y_train, classes, N, limit_N = False)
+    DA = DataAugmentation()
+    X_train_synth, y_train_synth = DA.augment_train_set(X_train, y_train, classes, N, limit_N = False)
 
 if __name__ == '__main__':
     main()

@@ -3,6 +3,8 @@ import utils
 from tqdm import tqdm
 import multiprocessing as mp
 
+from utils.distances.dtw import dynamic_time_warping as dtw
+
 class DistanceMatrix:
     def __init__(self):
         pass
@@ -138,9 +140,9 @@ def dba(tseries, max_iter =10, verbose=False, init_avg_method = 'medoid',
         and m is the number of dimensions
     """
     # get the distance function 
-    dist_fun = utils.constants.DISTANCE_ALGORITHMS[distance_algorithm]
+    dist_fun = DISTANCE_ALGORITHMS[distance_algorithm]
     # get the distance function params 
-    dist_fun_params = utils.constants.DISTANCE_ALGORITHMS_PARAMS[distance_algorithm]
+    dist_fun_params = DISTANCE_ALGORITHMS_PARAMS[distance_algorithm]
     # check if given dataset is empty 
     if len(tseries)==0: 
         # then return a random time series because the average cannot be computed 
@@ -174,3 +176,9 @@ def dba(tseries, max_iter =10, verbose=False, init_avg_method = 'medoid',
     
     return avg 
     
+
+DISTANCE_ALGORITHMS = {'dtw': dtw}
+
+DTW_PARAMS = {'w':-1} # warping window should be given in percentage (negative means no warping window)
+
+DISTANCE_ALGORITHMS_PARAMS = {'dtw':DTW_PARAMS}

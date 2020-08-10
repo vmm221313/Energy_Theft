@@ -32,9 +32,9 @@ class GetNeighbors:
         self.index_test_instance    = index_test_instance
         self.pre_computed_matrix    = pre_computed_matrix
 
-        pool = mp.Pool()
+        #p = mp.Pool()
         print('Calculating Distances')
-        distances = list(tqdm(p.imap(dist_pool_funk, range(len(x_train)))))
+        distances = list(tqdm(map(self.dist_pool_funk, range(len(x_train))), total=len(x_train)))
 
         '''
         # loop through the training set 
