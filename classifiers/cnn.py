@@ -28,15 +28,12 @@ class Classifier_CNN(base_Model):
         self.verbose = verbose
 
         file_path = self.output_directory+'best_model.hdf5'
-        model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
+        model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_loss', save_best_only=True)
         self.callbacks.append(model_checkpoint)
 
     def build_model(self, input_shape, nb_classes):
         padding = 'valid'
         input_layer = keras.layers.Input(input_shape)
-
-        if input_shape[0] < 60: # for italypowerondemand dataset
-            padding = 'same'
 
         conv1 = keras.layers.Conv1D(filters=6,kernel_size=7,padding=padding,activation='sigmoid')(input_layer)
         conv1 = keras.layers.AveragePooling1D(pool_size=3)(conv1)
@@ -45,14 +42,13 @@ class Classifier_CNN(base_Model):
         conv2 = keras.layers.AveragePooling1D(pool_size=3)(conv2)
 
         flatten_layer = keras.layers.Flatten()(conv2)
-
-        output_layer = keras.layers.Dense(units=nb_classes,activation='sigmoid')(flatten_layer)
+        output_layer = keras.layers.Dense(units=nb_classes, activation='sigmoid')(flatten_layer)
 
         model = keras.models.Model(inputs=input_layer, outputs=output_layer)
         
         optimizer = keras.optimizers.Adam(lr = 0.01)
-
-        model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=['accuracy'])
+        model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=self.metrics)
+        tf.keras.utils.plot_model(model, to_file='models/cnn_plot.png', show_shapes=True, show_layer_names=True)
 
         session.close()
 
