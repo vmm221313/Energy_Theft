@@ -28,7 +28,7 @@ class Classifier_LSTMFCN(base_Model):
 		self.verbose = verbose
 		
 		file_path = self.output_directory+'best_model.hdf5'
-		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
+		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_loss', save_best_only=True, save_weights_only=True)
 		self.callbacks.append(model_checkpoint)
 
 	def build_model(self, input_shape, nb_classes):
@@ -59,8 +59,8 @@ class Classifier_LSTMFCN(base_Model):
 		model = keras.models.Model(inputs=input_layer, outputs=output_layer)
 
 		optimizer = keras.optimizers.Adam(lr = 0.01)
-
-		model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=['accuracy'])
+		model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=self.metrics)
+		tf.keras.utils.plot_model(model, to_file='models/lstmfcn_plot.png', show_shapes=True, show_layer_names=True)
 
 		session.close()
 		return model 

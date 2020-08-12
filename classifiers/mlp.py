@@ -4,9 +4,8 @@ import numpy as np
 import time
 
 from classifiers.base import base_Model
-#from utils.utils import save_logs
-#from utils.utils import calculate_metrics
 
+tf.random.set_seed(42)
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
@@ -29,7 +28,7 @@ class Classifier_MLP(base_Model):
 		self.verbose = verbose
 		
 		file_path = self.output_directory+'best_model.hdf5'
-		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_accuracy', save_best_only=True)
+		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_loss', save_best_only=True, save_weights_only=True)
 		self.callbacks.append(model_checkpoint)
 
 	def build_model(self, input_shape, nb_classes):
@@ -52,6 +51,10 @@ class Classifier_MLP(base_Model):
 
 		model = keras.models.Model(inputs=input_layer, outputs=output_layer)
 
-		model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adadelta(), metrics=['accuracy'])
+		optimizer = keras.optimizers.Adam(lr = 0.01)
+		model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=self.metrics)
+		tf.keras.utils.plot_model(model, to_file='models/mlp_plot.png', show_shapes=True, show_layer_names=True)
+
+		session.close()
 
 		return model

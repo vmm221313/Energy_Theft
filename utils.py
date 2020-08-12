@@ -4,9 +4,33 @@ import numpy as np
 import pandas as po
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import roc_auc_score, auc, roc_curve, average_precision_score, accuracy_score, f1_score, precision_score, recall_score, precision_recall_curve
+from sklearn.metrics import roc_auc_score, auc, roc_curve, average_precision_score, accuracy_score, f1_score, precision_score, recall_score, precision_recall_curve, confusion_matrix
+
+import tensorflow as tf
+import tensorflow.keras.backend as K
 
 from preprocessing import get_standard_data, get_undersampled_data
+
+def matthews_correlation(y_true, y_pred):
+	#y_true 		= K.cast(y_true, dtype=int)
+	#y_pred 		= K.cast(y_pred, dtype=int)
+	
+	y_pred_pos 	= K.round(K.clip(y_pred, 0, 1))
+	y_pred_neg 	= 1 - y_pred_pos
+
+	y_pos = K.round(K.clip(y_true, 0, 1))
+	y_neg = 1 - y_pos
+
+	tp = K.sum(y_pos * y_pred_pos)
+	tn = K.sum(y_neg * y_pred_neg)
+
+	fp = K.sum(y_neg * y_pred_pos)
+	fn = K.sum(y_pos * y_pred_neg)
+
+	numerator = (tp * tn - fp * fn)
+	denominator = K.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+
+	return numerator / (denominator + K.epsilon())
 
 def covariance(x, y):
 	xy = x*y
@@ -60,6 +84,8 @@ class save_results():
 		self.save_predictions(y_true, y_pred)
 
 		self.model_name 	= model_name
+		self.y_true_raw 	= y_true
+		self.y_pred_raw 	= y_pred
 		self.y_true 		= np.argmax(y_true, axis = 1)
 		self.y_pred 		= np.argmax(y_pred, axis = 1)
 		self.y_prob_true 	= y_pred[:, 1]
@@ -81,8 +107,35 @@ class save_results():
 		self.__plot_train_val_loss__()
 		self.__plot_val_accuracy__()
 		self.__plot_precision_recall_with_epochs__()
+		self.__plot_confusion_matrix__()
+		self.__plot_mcc_with_epochs__()
+
+	def __plot_mcc_with_epochs__(self):
+		plt.plot(self.history['matthews_correlation'], color='blue', label='Train MCC')
+		plt.plot(self.history['val_matthews_correlation'], color='orange', label='Val MCC')
+		plt.xlabel('Epochs')
+		plt.ylabel('MCC')
+		plt.legend()
+		plt.savefig(self.outputs_dir+'train_val_mcc.png')
+		plt.close()
+
+	def __plot_confusion_matrix__(self):
+		tn, fp, fn, tp = confusion_matrix(self.y_true, self.y_pred).ravel()
+		cm = np.array([[tp, fn], [fp, tn]]) # X -> predicted, Y -> actual
+
+		labels = ['Positive', 'Negative']
+
+		plt.matshow(cm)
+		plt.colorbar()
+		plt.xticks(range(len(labels)), labels)
+		plt.yticks(range(len(labels)), labels)
+		plt.xlabel('Predicted Value')
+		plt.ylabel('Actual Value')
+		plt.savefig(self.outputs_dir+'confusion_matrix.png')
+		plt.close()
 
 	def __plot_precision_recall_with_epochs__(self):
+		#, linestyle='--', marker='o'
 		plt.plot(self.history['val_precision'], color='blue', label='Precision')
 		plt.plot(self.history['val_recall'], color='orange', label='Recall')
 		plt.xlabel('Epochs')
@@ -112,7 +165,7 @@ class save_results():
 	def __plot_roc_curve__(self):
 		lr_fpr, lr_tpr, _ = roc_curve(self.y_true, self.y_prob_true)
 		
-		plt.plot(lr_fpr, lr_tpr, marker='.')
+		plt.plot(lr_fpr, lr_tpr, marker='.', color='blue')
 		plt.xlabel('False Positive Rate')
 		plt.ylabel('True Positive Rate')
 
@@ -123,7 +176,7 @@ class save_results():
 		lr_precision, lr_recall, _ = precision_recall_curve(self.y_true, self.y_prob_true)
 		lr_f1, lr_auc = f1_score(self.y_true, self.y_pred), auc(lr_recall, lr_precision)
 
-		plt.plot(lr_recall, lr_precision, marker='.')
+		plt.plot(lr_recall, lr_precision, color='blue')
 		plt.xlabel('Recall')
 		plt.ylabel('Precision')
 
@@ -138,10 +191,14 @@ class save_results():
 					'Accuracy' 	: self.__accuracy_score__(),
 					'F1' 		: self.__f1_score__(), 
 					'Precision' : self.__precision__(),
-					'Recall'	: self.__recall__()
+					'Recall'	: self.__recall__(), 
+					'MCC'		: self.__matthews_correlation__()
 					}
 
 		self.results_df = self.results_df.append(metrics, ignore_index=True)
+
+	def __matthews_correlation__(self):
+		return tf.get_static_value(matthews_correlation(self.y_true_raw, self.y_pred_raw))
 
 	def __area_under_the_curve__(self):
 		return roc_auc_score(self.y_true, self.y_prob_true)

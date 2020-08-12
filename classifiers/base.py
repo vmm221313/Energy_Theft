@@ -1,8 +1,11 @@
 import time
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 import tensorflow.keras as keras
+import tensorflow.keras.backend as K
 
+from utils import matthews_correlation
 from classifiers.custom_layers import TokenAndPositionEmbedding, TransformerBlock
 
 class base_Model():
@@ -24,7 +27,8 @@ class base_Model():
 		FalseNegatives			= tf.keras.metrics.FalseNegatives()
 		Precision				= tf.keras.metrics.Precision()
 		Recall					= tf.keras.metrics.Recall()
-		self.metrics 			= [AUC, Accuracy, TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Precision, Recall]
+		MCC  					= matthews_correlation#tfa.metrics.MatthewsCorrelationCoefficient(num_classes=2)
+		self.metrics 			= [AUC, Accuracy, TruePositives, TrueNegatives, FalsePositives, FalseNegatives, Precision, Recall, MCC]
 
 	def fit(self, x_train, y_train, x_val, y_val, batch_size=64, epochs=100):
 		if not tf.test.is_gpu_available:
@@ -38,7 +42,9 @@ class base_Model():
 		#self.model.save(self.output_directory+'last_model.hdf5')
 
 		# Load best model
-		model = keras.models.load_model(self.output_directory+'best_model.hdf5')
+		#model = keras.models.load_model(self.output_directory+'best_model.hdf5')
+		self.model.load_weights(self.output_directory+'best_model.hdf5')
+		#load_status.assert_consumed()
 
 		#y_pred = self.model.predict(x_val) 
 		#y_pred = np.argmax(y_pred , axis=1) # convert the predicted from binary to integer
@@ -52,7 +58,8 @@ class base_Model():
 		if model_path == None:
 			model_path = self.output_directory+'best_model.hdf5'
 
-		model  = keras.models.load_model(model_path)
+		#model  = keras.models.load_model(model_path)
+		self.model.load_weights(self.output_directory+'best_model.hdf5')
 		y_pred = self.model.predict(x_test)
 
 		return y_pred

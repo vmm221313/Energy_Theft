@@ -21,7 +21,7 @@ def main(args):
 		
 	# TODO -> use class weights
 
-	hist = classifier.fit(X_train, y_train, X_val, y_val)
+	hist = classifier.fit(X_train, y_train, X_val, y_val, batch_size=64)
 	#print(hist.history)
 
 	y_pred = classifier.predict(X_test)
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 
 	# Classifier to be used
-	parser.add_argument('--model', type=str, choices=['cnn', 'encoder', 'fcn', 'mlp', 'resnet', 'transformer'])
+	parser.add_argument('--model', type=str, choices=['cnn', 'encoder', 'fcn', 'mlp', 'resnet', 'transformer', 'lstmfcn', 'alstmfcn'])
 	
 	# Imbalance Technique to be used
 	parser.add_argument('--imbalance_type', type=str, default='standard')

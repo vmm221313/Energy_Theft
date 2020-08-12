@@ -4,6 +4,7 @@ import numpy as np
 import time 
 
 from classifiers.base import base_Model
+from classifiers.custom_layers import TokenAndPositionEmbedding, TransformerBlock
 
 tf.random.set_seed(42)
 from tensorflow.compat.v1 import ConfigProto
@@ -13,9 +14,9 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
-class Classifier_FCN(base_Model):
+class Classifier_TRANSFORMER(base_Model):
 	def __init__(self, output_directory, input_shape, nb_classes, verbose=False, build=True):
-		super(Classifier_FCN, self).__init__()
+		super(Classifier_TRANSFORMER, self).__init__()
 
 		self.output_directory = output_directory
 		
@@ -30,31 +31,26 @@ class Classifier_FCN(base_Model):
 		file_path = self.output_directory+'best_model.hdf5'
 		model_checkpoint = keras.callbacks.ModelCheckpoint(filepath=file_path, monitor='val_loss', save_best_only=True, save_weights_only=True)
 		self.callbacks.append(model_checkpoint)
-
+	
 	def build_model(self, input_shape, nb_classes):
+		emb_dim 	= 512
+		num_heads	= 2
+		ff_dim 		= 128
+		transformer_block = TransformerBlock(emb_dim, num_heads, ff_dim)
+
 		input_layer = keras.layers.Input(input_shape)
-
-		conv1 = keras.layers.Conv1D(filters=128, kernel_size=8, padding='same')(input_layer)
-		conv1 = keras.layers.BatchNormalization()(conv1)
-		conv1 = keras.layers.Activation(activation='relu')(conv1)
-
-		conv2 = keras.layers.Conv1D(filters=256, kernel_size=5, padding='same')(conv1)
-		conv2 = keras.layers.BatchNormalization()(conv2)
-		conv2 = keras.layers.Activation('relu')(conv2)
-
-		conv3 = keras.layers.Conv1D(128, kernel_size=3,padding='same')(conv2)
-		conv3 = keras.layers.BatchNormalization()(conv3)
-		conv3 = keras.layers.Activation('relu')(conv3)
-
-		gap_layer = keras.layers.GlobalAveragePooling1D()(conv3)
-
-		output_layer = keras.layers.Dense(nb_classes, activation='softmax')(gap_layer)
+		x = transformer_block(input_layer)
+		x = keras.layers.GlobalAveragePooling1D()(x)
+		x = keras.layers.Dropout(0.1)(x)
+		x = keras.layers.Dense(20, activation="relu")(x)
+		x = keras.layers.Dropout(0.1)(x)
+		output_layer = keras.layers.Dense(nb_classes, activation="softmax")(x)
 
 		model = keras.models.Model(inputs=input_layer, outputs=output_layer)
-
-		optimizer = keras.optimizers.Adam(lr = 0.01)
+		
+		optimizer = keras.optimizers.Adam(lr = 1)
 		model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics=self.metrics)
-		tf.keras.utils.plot_model(model, to_file='models/fcn_plot.png', show_shapes=True, show_layer_names=True)
+		tf.keras.utils.plot_model(model, to_file='models/transformer_plot.png', show_shapes=True, show_layer_names=True)
 
 		session.close()
 		return model 
