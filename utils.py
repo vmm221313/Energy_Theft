@@ -92,7 +92,7 @@ class save_results():
 		self.make_plots()
 
 	def save_predictions(self, y_true, y_pred): # for comparitive analysis later
-		np.savez(self.outputs_dir+'predictions.npz', y_true=y_true, y_pred=y_pred)
+		np.savez(self.outputs_dir+'predictions.npz', y_true=y_true, y_pred=y_pred, )
 
 		with open(self.outputs_dir+'history.pkl', 'wb') as f:
 			pickle.dump(self.history, f)
