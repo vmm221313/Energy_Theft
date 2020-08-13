@@ -12,9 +12,6 @@ import tensorflow.keras.backend as K
 from preprocessing import get_standard_data, get_undersampled_data
 
 def matthews_correlation(y_true, y_pred):
-	#y_true 		= K.cast(y_true, dtype=int)
-	#y_pred 		= K.cast(y_pred, dtype=int)
-	
 	y_pred_pos 	= K.round(K.clip(y_pred, 0, 1))
 	y_pred_neg 	= 1 - y_pred_pos
 
